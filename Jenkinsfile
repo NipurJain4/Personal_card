@@ -10,7 +10,7 @@ pipeline {
         }
          stage('running the container') {
             steps {
-                sh "docker run -d -p 3000:80 my-card ."
+                sh "docker run -d -p 3000:80 pcard ."
                 echo "running container success"
             }
         }
