@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('building docker image') {
             steps {
-                sh "docker build -t PCard ."
+                sh "docker build -t pcard ."
                 echo "building success"
             }
         }
