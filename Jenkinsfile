@@ -27,17 +27,10 @@ pipeline {
 
         stage('Login to ECR') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    sh '''
-                        export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                        export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-                    '''
-                    echo "✅ Logged into ECR"
-                }
+                sh """
+                    aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                """
+                echo "✅ Logged into ECR"
             }
         }
 
@@ -50,34 +43,23 @@ pipeline {
 
         stage('Deploy on EC2') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    sshagent(['nipur-ssh-key']) {
-                        sh """
-                            ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
-                            echo "🔐 SSH into EC2 successful"
+                sshagent(credentials: ['private-key']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
+                            echo "🔄 Stopping existing container (if any)..."
+                            docker stop profilecard || true
+                            docker rm profilecard || true
 
-                            # Install AWS CLI if not present
-                            if ! command -v aws &> /dev/null; then
-                                echo "🛠 Installing AWS CLI..."
-                                curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-                                unzip awscliv2.zip
-                                sudo ./aws/install
-                            fi
+                            echo "🔐 Logging into ECR..."
+                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
-                            export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-
-                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_URI}
-
-                            docker rm -f card || true
+                            echo "📥 Pulling image..."
                             docker pull ${ECR_URI}
-                            docker run -d -p 3000:3000 --name card ${ECR_URI}
-                            EOF
-                        """
-                    }
+
+                            echo "🚀 Running container..."
+                            docker run -d -p 3000:3000 --name profilecard ${ECR_URI}
+                        EOF
+                    """
                 }
             }
         }
