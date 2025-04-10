@@ -64,7 +64,7 @@ pipeline {
                             docker pull ${ECR_URI}
 
                             echo "🚀 Running container..."
-                            docker run -d -p 3000:3000 --name profilecard ${ECR_URI}
+                            docker run -d -p 3000:80 --name profilecard ${ECR_URI}
                         EOF
                     """
                 }
