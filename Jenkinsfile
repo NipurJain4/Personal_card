@@ -50,7 +50,7 @@ pipeline {
 
         stage('Deploy on EC2') {
             steps {
-                sshagent(credentials: ['private-key']) {
+                sshagent(credentials: ['nipur-ssh-key']) {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
                             echo "🔄 Stopping existing container (if any)..."
