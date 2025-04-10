@@ -31,10 +31,11 @@ pipeline {
                     string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
+                    // ✅ FIXED: Avoided insecure interpolation using triple single quotes
                     sh '''
-                        export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                        export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                        export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                        export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
                     '''
                     echo "✅ Logged into ECR"
                 }
@@ -55,20 +56,21 @@ pipeline {
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     sshagent(['nipur-ssh-key']) {
-                        sh """
-                            ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
+                        // ✅ FIXED: Used secure quoting and avoided interpolation in SSH block
+                        sh '''
+                            ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
                             echo "🔐 SSH into EC2 successful"
 
-                            export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                            
-                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                            export AWS_ACCESS_KEY_ID='$AWS_ACCESS_KEY_ID'
+                            export AWS_SECRET_ACCESS_KEY='$AWS_SECRET_ACCESS_KEY'
+
+                            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
                             docker rm -f card || true
-                            docker pull ${ECR_URI}
-                            docker run -d -p 3000:80 --name card ${ECR_URI}
+                            docker pull $ECR_URI
+                            docker run -d -p 3000:80 --name card $ECR_URI
                             EOF
-                        """
+                        '''
                     }
                 }
             }
