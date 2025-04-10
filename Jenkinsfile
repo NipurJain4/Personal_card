@@ -65,7 +65,7 @@ pipeline {
 
                             echo "🚀 Running container..."
                             docker run -d -p 3000:80 --name profilecard ${ECR_URI}
-                        EOF
+                        ENDSSH
                     """
                 }
             }
