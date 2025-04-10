@@ -53,19 +53,19 @@ pipeline {
                 sshagent(credentials: ['nipur-ssh-key']) {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
-                            echo "🔄 Stopping existing container (if any)..."
-                            docker stop profilecard || true
-                            docker rm profilecard || true
+    echo "🔄 Stopping existing container (if any)..."
+    docker stop profilecard || true
+    docker rm profilecard || true
 
-                            echo "🔐 Logging into ECR..."
-                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+    echo "🔐 Logging into ECR..."
+    aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
-                            echo "📥 Pulling image..."
-                            docker pull ${ECR_URI}
+    echo "📥 Pulling image..."
+    docker pull ${ECR_URI}
 
-                            echo "🚀 Running container..."
-                            docker run -d -p 3000:80 --name profilecard ${ECR_URI}
-                        ENDSSH
+    echo "🚀 Running container..."
+    docker run -d -p 3000:80 --name profilecard ${ECR_URI}
+EOF
                     """
                 }
             }
