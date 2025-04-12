@@ -12,7 +12,7 @@ pipeline {
     }
 
     stages {
-        stage{
+        stage("hello from lib"){
             steps{
                 script{
                     hello()
