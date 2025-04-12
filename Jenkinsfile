@@ -21,60 +21,40 @@ pipeline {
         }
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t pcard ."
-                echo "✅ Docker image built"
+                script{
+                    build("pcard")
+                }
             }
         }
 
         stage('Tag Docker Image') {
             steps {
-                sh "docker tag pcard ${ECR_URI}"
-                echo "✅ Docker image tagged"
+                script{
+                    tag_image("pcard", ECR_URI)
+                }
             }
         }
 
         stage('Login to ECR') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    sh '''
-                        export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                        export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-                    '''
-                    echo "✅ Logged into ECR"
+                script{
+                    ecr_login(AWS_REGION, AWS_ACCOUNT_ID)
                 }
             }
         }
 
         stage('Push Docker Image to ECR') {
             steps {
-                sh "docker push ${ECR_URI}"
-                echo "✅ Image pushed to ECR"
+               script{
+                push_image(ECR_URI)
+               }
             }
         }
 
         stage('Deploy on EC2') {
             steps {
-                sshagent(credentials: ['nipur-ssh-key']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << EOF
-    echo "🔄 Stopping existing container (if any)..."
-    docker stop profilecard || true
-    docker rm profilecard || true
-
-    echo "🔐 Logging into ECR..."
-    aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-
-    echo "📥 Pulling image..."
-    docker pull ${ECR_URI}
-
-    echo "🚀 Running container..."
-    docker run -d -p 3000:80 --name profilecard ${ECR_URI}
-EOF
-                    """
+                script{
+                    EC2_deploy(EC2_USER, EC2_HOST, ECR_URI, AWS_REGION, AWS_ACCOUNT_ID, ECR_REPO_NAME)
                 }
             }
         }
