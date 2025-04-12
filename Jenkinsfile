@@ -7,7 +7,7 @@ pipeline {
         AWS_ACCOUNT_ID = '897729121177'
         ECR_REPO_NAME = 'profilecard'
         ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
-        EC2_HOST = "ec2-15-206-165-58.ap-south-1.compute.amazonaws.com"
+        EC2_HOST = "ec2-13-233-154-199.ap-south-1.compute.amazonaws.com"
         EC2_USER = "ubuntu"
     }
 
