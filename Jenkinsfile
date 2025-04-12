@@ -1,3 +1,4 @@
+@Liberary("sharedlib") _ 
 pipeline {
     agent any
 
@@ -11,6 +12,13 @@ pipeline {
     }
 
     stages {
+        stage{
+            steps{
+                script{
+                    hello()
+                }
+            }
+        }
         stage('Build Docker Image') {
             steps {
                 sh "docker build -t pcard ."
